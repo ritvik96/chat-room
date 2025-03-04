@@ -1,4 +1,4 @@
-const socket = new WebSocket("ws://localhost:3000");
+const socket = new WebSocket("https://chat-room-se17.onrender.com");
 
 const chatContainer = document.getElementById("chat-container");
 const chatBox = document.getElementById("chat-box");
