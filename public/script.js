@@ -42,7 +42,6 @@ socket.onmessage = (event) => {
         displayMessage(data.text, data.self ? "sent" : "received");
     }
 };
-}
 
 // Send message on button click
 sendButton.addEventListener("click", sendMessage);
