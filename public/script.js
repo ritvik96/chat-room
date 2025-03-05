@@ -1,4 +1,4 @@
-const socket = new WebSocket("https://chat-room-tezr.onrender.com");
+const socket = new WebSocket("wss://chat-room-tezr.onrender.com");
 
 const chatContainer = document.getElementById("chat-container");
 const chatBox = document.getElementById("chat-box");
