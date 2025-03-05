@@ -26,6 +26,22 @@ function joinChat(role) {
     socket.send(JSON.stringify({ type: "join", role }));
     roleSelection.classList.add("hidden");
     chatContainer.classList.remove("hidden");
+      // Show waiting message
+    const waitingMessage = document.createElement("div");
+    waitingMessage.id = "waiting-message";
+    waitingMessage.textContent = role === "listener" ? "Waiting for a Venter..." : "Waiting for a Listener...";
+    chatBox.appendChild(waitingMessage);
+}
+
+// Remove waiting message when a chat starts
+socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.type === "message") {
+        document.getElementById("waiting-message")?.remove(); // Remove waiting message
+        displayMessage(data.text, data.self ? "sent" : "received");
+    }
+};
 }
 
 // Send message on button click
