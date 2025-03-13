@@ -90,11 +90,11 @@ setInterval(() => {
 function sendEmail(zipFilePath, chatCount, unmatchedUsers) {
     let transporter = nodemailer.createTransport({
         service: "gmail",
-        auth: { user: "your-email@gmail.com", pass: "your-email-password" }
+        auth: { user: "your_email_gmail_com", pass: "your_email_password" }
     });
 
     let mailOptions = {
-        from: "your-email@gmail.com",
+        from: "your_email_gmail_com",
         to: "ritvikmittal96@gmail.com",
         subject: "Daily Chat Room Report",
         text: `Total Chats: ${chatCount}\nUnmatched Users: ${unmatchedUsers}`,
