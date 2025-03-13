@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const nodemailer = require("nodemailer");
 const archiver = require("archiver");
+require("dotenv").config(); // Load environment variables
 
 const app = express();
 const server = http.createServer(app);
@@ -17,13 +18,20 @@ let waitingVenters = [];
 let activeChats = new Map();
 let chatLogs = [];
 
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.your_email_gmail_com,
+        pass: process.env.your_email_password
+    }
+});
+
 wss.on("connection", (ws) => {
     ws.on("message", (message) => {
         const data = JSON.parse(message);
 
         if (data.type === "join") {
             ws.role = data.role;
-
             if (ws.role === "listener" && waitingVenters.length > 0) {
                 let venter = waitingVenters.shift();
                 createChat(ws, venter);
@@ -88,13 +96,8 @@ setInterval(() => {
 }, 86400000);
 
 function sendEmail(zipFilePath, chatCount, unmatchedUsers) {
-    let transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: { user: "your_email_gmail_com", pass: "your_email_password" }
-    });
-
     let mailOptions = {
-        from: "your_email_gmail_com",
+        from: process.env.your_email_gmail_com,
         to: "ritvikmittal96@gmail.com",
         subject: "Daily Chat Room Report",
         text: `Total Chats: ${chatCount}\nUnmatched Users: ${unmatchedUsers}`,
@@ -106,5 +109,23 @@ function sendEmail(zipFilePath, chatCount, unmatchedUsers) {
         else console.log("Email sent: ", info.response);
     });
 }
+
+// Test Email Route
+app.get("/test-email", async (req, res) => {
+    try {
+        let mailOptions = {
+            from: process.env.your_email_gmail_com,
+            to: "ritvikmittal96@gmail.com",
+            subject: "Test Email from Render",
+            text: "This is a test email to check if the email service is working."
+        };
+
+        let info = await transporter.sendMail(mailOptions);
+        res.send(`Test email sent! Message ID: ${info.messageId}`);
+    } catch (error) {
+        console.error("Error sending test email:", error);
+        res.status(500).send("Failed to send test email.");
+    }
+});
 
 server.listen(3000, () => console.log("Server running on https://chat-room-tezr.onrender.com"));
