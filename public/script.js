@@ -7,6 +7,9 @@ const sendButton = document.getElementById("send-button");
 const listenerButton = document.getElementById("listener");
 const venterButton = document.getElementById("venter");
 const roleSelection = document.getElementById("role-selection");
+const waitingInfo = document.createElement("div");
+waitingInfo.id = "waiting-info";
+chatBox.appendChild(waitingInfo);
 
 let typingTimeout;
 
@@ -16,10 +19,13 @@ socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
 
     if (data.type === "message") {
-        document.getElementById("typing-indicator")?.remove(); // Remove typing indicator
+        document.getElementById("typing-indicator")?.remove();
+        document.getElementById("waiting-info")?.remove(); // Remove waiting info when connected
         displayMessage(data.text, data.self ? "sent" : "received");
     } else if (data.type === "typing") {
         showTypingIndicator();
+    } else if (data.type === "waitingCount") {
+        updateWaitingInfo(data.listeners, data.venters);
     }
 };
 
@@ -30,11 +36,7 @@ function joinChat(role) {
     socket.send(JSON.stringify({ type: "join", role }));
     roleSelection.classList.add("hidden");
     chatContainer.classList.remove("hidden");
-
-    const waitingMessage = document.createElement("div");
-    waitingMessage.id = "waiting-message";
-    waitingMessage.textContent = role === "listener" ? "Waiting for a Venter..." : "Waiting for a Listener...";
-    chatBox.appendChild(waitingMessage);
+    waitingInfo.textContent = role === "listener" ? "Waiting for a Venter..." : "Waiting for a Listener...";
 }
 
 sendButton.addEventListener("click", sendMessage);
@@ -76,3 +78,9 @@ function showTypingIndicator() {
     }, 2000);
 }
 
+function updateWaitingInfo(listeners, venters) {
+    if (document.getElementById("waiting-info")) {
+        document.getElementById("waiting-info").textContent = 
+            `Listeners waiting: ${listeners}, Venters waiting: ${venters}`;
+    }
+}
