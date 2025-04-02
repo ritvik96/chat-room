@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const nodemailer = require("nodemailer");
 const archiver = require("archiver");
+const cron = require("node-cron");
 require("dotenv").config();
 
 const app = express();
@@ -17,6 +18,9 @@ let waitingListeners = [];
 let waitingVenters = [];
 let activeChats = new Map();
 let chatLogs = [];
+let totalChats = 0;
+let unmatchedVenters = 0;
+let unmatchedListeners = 0;
 
 const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -52,8 +56,13 @@ wss.on("connection", (ws) => {
                 let listener = waitingListeners.shift();
                 createChat(listener, ws);
             } else {
-                if (ws.role === "listener") waitingListeners.push(ws);
-                else waitingVenters.push(ws);
+                if (ws.role === "listener") {
+                    waitingListeners.push(ws);
+                    unmatchedListeners++;
+                } else {
+                    waitingVenters.push(ws);
+                    unmatchedVenters++;
+                }
                 broadcastWaitingCounts();
             }
         } else if (data.type === "message") {
@@ -88,10 +97,41 @@ wss.on("connection", (ws) => {
 function createChat(listener, venter) {
     activeChats.set(listener, venter);
     activeChats.set(venter, listener);
-
+    totalChats++;
     listener.send(JSON.stringify({ type: "message", text: "Connected to a Venter!" }));
     venter.send(JSON.stringify({ type: "message", text: "Connected to a Listener!" }));
     broadcastWaitingCounts();
+}
+
+// Schedule daily email at 9 AM server time
+cron.schedule("0 9 * * *", () => {
+    sendDailyEmail();
+});
+
+function sendDailyEmail() {
+    let chatSummary = `Total Chats Today: ${totalChats}\n\nChat Logs:\n`;
+    chatLogs.forEach((log, index) => {
+        chatSummary += `#${index + 1} - ${log.sender}: ${log.message}\n`;
+    });
+
+    chatSummary += `\nUnmatched Venters: ${unmatchedVenters}`;
+    chatSummary += `\nUnmatched Listeners: ${unmatchedListeners}`;
+
+    transporter.sendMail({
+        from: process.env.your_email_gmail_com,
+        to: "ritvikmittal96@gmail.com", // Replace with your actual email
+        subject: "Daily Chat Summary - The Vent Hub",
+        text: chatSummary
+    }, (err, info) => {
+        if (err) console.log("Email error:", err);
+        else console.log("Daily Email sent:", info.response);
+    });
+    
+    // Reset logs for the next day
+    totalChats = 0;
+    chatLogs = [];
+    unmatchedVenters = 0;
+    unmatchedListeners = 0;
 }
 
 server.listen(3000, () => console.log("Server running on https://chat-room-tezr.onrender.com"));
